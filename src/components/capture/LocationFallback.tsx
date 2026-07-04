@@ -18,7 +18,8 @@ function ClickHandler({ onClick }: { onClick: (e: LeafletMouseEvent) => void }) 
 
 export function LocationFallback({ latitude, longitude, onChange }: LocationFallbackProps) {
   const markerRef = useRef<LeafletMarker | null>(null)
-  const hasPosition = latitude !== null && longitude !== null
+  const hasPosition =
+    latitude !== null && longitude !== null && Number.isFinite(latitude) && Number.isFinite(longitude)
   const position: [number, number] = useMemo(
     () => (hasPosition ? [latitude, longitude] : DEFAULT_CENTER),
     [hasPosition, latitude, longitude],

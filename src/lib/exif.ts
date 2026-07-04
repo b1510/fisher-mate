@@ -10,8 +10,8 @@ export interface PhotoExifData {
 export async function extractPhotoExif(file: File): Promise<PhotoExifData> {
   try {
     const data = await parse(file, { gps: true, exif: true })
-    const latitude = typeof data?.latitude === 'number' ? data.latitude : null
-    const longitude = typeof data?.longitude === 'number' ? data.longitude : null
+    const latitude = Number.isFinite(data?.latitude) ? data.latitude : null
+    const longitude = Number.isFinite(data?.longitude) ? data.longitude : null
     const rawDate = data?.DateTimeOriginal ?? data?.CreateDate ?? null
     const capturedAt = rawDate instanceof Date ? rawDate : null
 

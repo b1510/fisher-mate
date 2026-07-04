@@ -9,17 +9,20 @@ interface CatchMapProps {
 const DEFAULT_CENTER: [number, number] = [46.6, 2.4]
 
 export function CatchMap({ catches }: CatchMapProps) {
+  const validCatches = catches.filter(
+    (c) => Number.isFinite(c.latitude) && Number.isFinite(c.longitude),
+  )
   const center: [number, number] =
-    catches.length > 0 ? [catches[0].latitude, catches[0].longitude] : DEFAULT_CENTER
+    validCatches.length > 0 ? [validCatches[0].latitude, validCatches[0].longitude] : DEFAULT_CENTER
 
   return (
     <div className="h-[70vh] rounded-md overflow-hidden">
-      <MapContainer center={center} zoom={catches.length > 0 ? 8 : 5} className="h-full w-full">
+      <MapContainer center={center} zoom={validCatches.length > 0 ? 8 : 5} className="h-full w-full">
         <TileLayer
           attribution="&copy; OpenStreetMap contributors"
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {catches.map((c) => (
+        {validCatches.map((c) => (
           <Marker key={c.key} position={[c.latitude, c.longitude]} icon={defaultMarkerIcon}>
             <Popup>
               <div className="text-sm">

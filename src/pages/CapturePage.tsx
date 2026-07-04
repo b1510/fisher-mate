@@ -34,7 +34,8 @@ export function CapturePage() {
   const [saving, setSaving] = useState(false)
 
   const hasInput = photoFile !== null || promptText.trim().length > 0
-  const canContinue = hasInput && latitude !== null && longitude !== null && capturedAt
+  const canContinue =
+    hasInput && Number.isFinite(latitude) && Number.isFinite(longitude) && Boolean(capturedAt)
 
   async function handlePhotoSelected(file: File) {
     const exif = await extractPhotoExif(file)
