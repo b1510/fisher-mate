@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum LocationSource {
+  EXIF_GPS
+  DEVICE_GPS
+  MANUAL_PIN
+}
+
+enum CapturedAtSource {
+  EXIF
+  USER_INPUT
+  DEVICE_CLOCK
+}
+
+enum WaterClarity {
+  CLAIRE
+  TROUBLE
+  BOUEUSE
+}
+
+enum LureType {
+  SPINNERBAIT
+  JIG
+  CRANKBAIT
+  SOFT_PLASTIC
+  SPOON
+  TOPWATER
+  JERKBAIT
+  BUZZBAIT
+  CHATTERBAIT
+  SPINNER
+  NED_RIG
+  AUTRE
+}
+
+model Catch {
+  id        String   @id @default(cuid())
+  clientId  String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Location
+  latitude       Float
+  longitude      Float
+  locationSource LocationSource
+
+  // Date/time
+  capturedAt       DateTime
+  capturedAtSource CapturedAtSource
+
+  // Media
+  photoUrl      String?
+  photoPathname String?
+
+  // Fish
+  species           String?
+  speciesConfidence Float?
+  estimatedSizeCm   Float?
+  sizeConfidence    Float?
+
+  // Lure
+  lureName        String?
+  lureType        LureType?
+  lureTypeRaw     String?
+  lureConfidence  Float?
+
+  // Water
+  waterClarity           WaterClarity?
+  waterClarityConfidence Float?
+  waterClarityUserSet    Boolean       @default(false)
+
+  // Weather snapshot (always 1:1 with a catch)
+  weatherTemperatureC     Float?
+  weatherWindSpeedKmh     Float?
+  weatherWindDirectionDeg Float?
+  weatherPressureHpa      Float?
+  weatherCloudCoverPct    Float?
+  weatherPrecipitationMm  Float?
+  weatherFetchedAt        DateTime?
+
+  // Free text
+  rawPrompt     String?
+  aiNotes       String?
+  aiRawResponse Json?
+
+  @@index([capturedAt])
+}
