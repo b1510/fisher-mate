@@ -1,32 +1,37 @@
-# React + TypeScript + Vite
+# FisherMate
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+PWA de journal de pêche assisté par IA : à partir d'une photo et/ou d'un prompt texte, enregistre automatiquement le lieu, la date/heure, la météo, l'espèce, la taille, le leurre et la clarté de l'eau d'une prise.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Frontend** : React + Vite, TypeScript, Tailwind CSS, PWA (`vite-plugin-pwa`)
+- **Backend** : Vercel Serverless Functions (`/api`)
+- **Base de données** : Postgres (Neon) + Prisma ORM
+- **Stockage photos** : Vercel Blob
+- **IA vision** : OpenAI GPT-4o (extraction structurée)
+- **Météo** : Open-Meteo
 
-## React Compiler
+## Développement local
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Copiez `.env.example` vers `.env` et renseignez :
+
+- `DATABASE_URL` / `DIRECT_URL` — chaînes de connexion Neon (poolée / directe)
+- `OPENAI_API_KEY` — clé API OpenAI
+- `BLOB_READ_WRITE_TOKEN` — jeton Vercel Blob
+
+Après toute modification de `prisma/schema.prisma` :
+
+```bash
+npx prisma migrate dev
+```
+
+Les routes `/api/*` sont des fonctions serverless Vercel ; `vite dev` seul ne les exécute pas. Utilisez `vercel dev` (après `vercel login` + `vercel link`) pour tester le parcours complet en local, ou testez via un déploiement Vercel (preview/production).
+
+## Déploiement
+
+Le projet est pensé pour être importé directement dans Vercel (build Vite + fonctions `/api` auto-détectées). Configurez les mêmes variables d'environnement dans les réglages du projet Vercel.
