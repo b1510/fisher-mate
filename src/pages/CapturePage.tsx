@@ -4,6 +4,7 @@ import type { CapturedAtSource, LocationSource } from '@shared/types'
 import { analyzeCatch, fetchWeather } from '@/lib/api-client'
 import { extractPhotoExif } from '@/lib/exif'
 import { fileToBase64 } from '@/lib/file'
+import { compressImage } from '@/lib/imageCompress'
 import { requestDeviceLocation } from '@/hooks/useGeolocation'
 import { setDraft } from '@/lib/draftStore'
 import { PhotoPicker } from '@/components/capture/PhotoPicker'
@@ -41,7 +42,6 @@ export function CapturePage() {
   const canContinue = hasInput && latitude !== null && longitude !== null && capturedAt
 
   async function handlePhotoSelected(file: File) {
-    setPhotoFile(file)
     const exif = await extractPhotoExif(file)
     if (exif.latitude !== null && exif.longitude !== null) {
       setLatitude(exif.latitude)
@@ -53,6 +53,7 @@ export function CapturePage() {
       setCapturedAt(toDatetimeLocalValue(exif.capturedAt))
       setCapturedAtSource('EXIF')
     }
+    setPhotoFile(await compressImage(file))
   }
 
   async function handleUseDeviceLocation() {

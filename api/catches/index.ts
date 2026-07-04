@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { prisma } from '../_lib/prisma'
 import { normalizeLureType } from '../../shared/lureType'
 import { serializeCatch } from '../_lib/serialize'
+import { uploadCatchPhoto } from '../_lib/blob'
 import { ValidationError, validateCreateCatchBody } from '../_lib/validate'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -15,6 +16,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
       const body = validateCreateCatchBody(req.body)
 
+      const photo = body.photoBase64 ? await uploadCatchPhoto(body.photoBase64) : null
+
       const created = await prisma.catch.create({
         data: {
           clientId: body.clientId,
@@ -26,8 +29,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           waterClarity: body.waterClarity,
           waterClarityConfidence: body.waterClarityConfidence,
           waterClarityUserSet: body.waterClarityUserSet ?? true,
-          photoUrl: body.photoUrl,
-          photoPathname: body.photoPathname,
+          photoUrl: photo?.url,
+          photoPathname: photo?.pathname,
           species: body.species,
           speciesConfidence: body.speciesConfidence,
           estimatedSizeCm: body.estimatedSizeCm,

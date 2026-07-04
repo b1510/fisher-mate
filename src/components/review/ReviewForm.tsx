@@ -4,6 +4,7 @@ import { normalizeLureType } from '@shared/lureType'
 import type { WaterClarity } from '@shared/types'
 import type { CatchDraft } from '@/lib/draftStore'
 import { createCatch } from '@/lib/api-client'
+import { fileToBase64 } from '@/lib/file'
 import { WaterClarityPicker } from './WaterClarityPicker'
 import { WeatherSummary } from './WeatherSummary'
 
@@ -53,6 +54,8 @@ export function ReviewForm({ draft, onSaved }: ReviewFormProps) {
     setSubmitting(true)
     setError(null)
     try {
+      const photoBase64 = draft.photoFile ? await fileToBase64(draft.photoFile) : undefined
+
       await createCatch({
         clientId: crypto.randomUUID(),
         latitude: draft.latitude,
@@ -62,6 +65,7 @@ export function ReviewForm({ draft, onSaved }: ReviewFormProps) {
         capturedAtSource: draft.capturedAtSource,
         photoUrl: null,
         photoPathname: null,
+        photoBase64,
         species: species || null,
         speciesConfidence: ai?.species.confidence ?? null,
         estimatedSizeCm: estimatedSizeCm ? Number(estimatedSizeCm) : null,

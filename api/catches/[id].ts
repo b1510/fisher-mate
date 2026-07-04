@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { prisma } from '../_lib/prisma'
 import { normalizeLureType } from '../../shared/lureType'
 import { serializeCatch } from '../_lib/serialize'
+import { deleteCatchPhoto } from '../_lib/blob'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { id } = req.query
@@ -65,7 +66,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method === 'DELETE') {
     try {
-      await prisma.catch.delete({ where: { id } })
+      const deleted = await prisma.catch.delete({ where: { id } })
+      if (deleted.photoPathname) {
+        await deleteCatchPhoto(deleted.photoPathname).catch(() => {})
+      }
       res.status(204).end()
     } catch {
       res.status(404).json({ error: 'Prise introuvable' })

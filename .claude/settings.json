@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(npm run build*)",
+      "PowerShell(npm run dev*)",
+      "PowerShell(npm run lint*)",
+      "PowerShell(npm run preview*)",
+      "PowerShell(npx prisma generate*)",
+      "PowerShell(npx prisma validate*)",
+      "PowerShell(npm config list*)",
+      "PowerShell(npm config get*)",
+      "PowerShell(npm audit*)",
+      "PowerShell(git status*)",
+      "PowerShell(git log*)",
+      "PowerShell(git diff*)",
+      "PowerShell(git show*)",
+      "PowerShell(git branch*)",
+      "PowerShell(git remote*)",
+      "PowerShell(git fetch*)",
+      "PowerShell(git config --get*)",
+      "PowerShell(git check-ignore*)",
+      "PowerShell(git --version*)",
+      "PowerShell(git add*)",
+      "PowerShell(git commit*)",
+      "PowerShell(git push*)",
+      "PowerShell(npm install*)",
+      "PowerShell(node --version*)",
+      "PowerShell(npm --version*)",
+      "PowerShell(Get-ChildItem*)",
+      "PowerShell(Test-Path*)",
+      "PowerShell(Get-Command*)",
+      "PowerShell(Get-Content*)"
+    ]
+  }
+}

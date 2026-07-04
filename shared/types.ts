@@ -70,6 +70,7 @@ export type CatchInput = Omit<
   'id' | 'createdAt' | 'updatedAt' | 'weather'
 > & {
   weather?: Partial<WeatherSnapshot>
+  photoBase64?: string
 }
 
 export interface AIFieldResult<T> {

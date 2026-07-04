@@ -18,6 +18,7 @@ export interface CreateCatchBody {
   waterClarityUserSet?: boolean
   photoUrl?: string
   photoPathname?: string
+  photoBase64?: string
   species?: string
   speciesConfidence?: number
   estimatedSizeCm?: number
