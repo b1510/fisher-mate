@@ -1,4 +1,4 @@
-import type { LureType, WaterClarity } from './types'
+import type { LureType, WaterClarity } from './types.js'
 
 export const AI_CONFIDENCE_THRESHOLD = 0.6
 

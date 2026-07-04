@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { getWeatherSnapshot } from './_lib/openMeteo'
+import { getWeatherSnapshot } from './_lib/openMeteo.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {

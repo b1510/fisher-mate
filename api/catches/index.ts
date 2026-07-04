@@ -1,9 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { prisma } from '../_lib/prisma'
-import { normalizeLureType } from '../../shared/lureType'
-import { serializeCatch } from '../_lib/serialize'
-import { uploadCatchPhoto } from '../_lib/blob'
-import { ValidationError, validateCreateCatchBody } from '../_lib/validate'
+import { prisma } from '../_lib/prisma.js'
+import { normalizeLureType } from '../../shared/lureType.js'
+import { serializeCatch } from '../_lib/serialize.js'
+import { uploadCatchPhoto } from '../_lib/blob.js'
+import { ValidationError, validateCreateCatchBody } from '../_lib/validate.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') {

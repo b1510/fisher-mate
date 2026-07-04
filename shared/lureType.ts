@@ -1,4 +1,4 @@
-import type { LureType } from './types'
+import type { LureType } from './types.js'
 
 const KEYWORDS: [LureType, string[]][] = [
   ['SPINNERBAIT', ['spinnerbait']],

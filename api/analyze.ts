@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { runFishCatchAnalysis, type RawAIField } from './_lib/openai'
-import { AI_CONFIDENCE_THRESHOLD } from '../shared/constants'
+import { runFishCatchAnalysis, type RawAIField } from './_lib/openai.js'
+import { AI_CONFIDENCE_THRESHOLD } from '../shared/constants.js'
 
 function toFieldResult<T>(field: RawAIField<T>) {
   return {

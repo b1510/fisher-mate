@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { prisma } from '../_lib/prisma'
-import { normalizeLureType } from '../../shared/lureType'
-import { serializeCatch } from '../_lib/serialize'
-import { deleteCatchPhoto } from '../_lib/blob'
+import { prisma } from '../_lib/prisma.js'
+import { normalizeLureType } from '../../shared/lureType.js'
+import { serializeCatch } from '../_lib/serialize.js'
+import { deleteCatchPhoto } from '../_lib/blob.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { id } = req.query
