@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom'
 const links = [
   { to: '/', label: 'Capturer', end: true },
   { to: '/historique', label: 'Historique', end: false },
+  { to: '/stats', label: 'Stats', end: false },
 ]
 
 export function BottomNav() {
