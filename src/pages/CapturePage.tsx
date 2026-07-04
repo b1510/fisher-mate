@@ -1,21 +1,34 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LURE_TYPE_OPTIONS } from '@shared/constants'
-import type { WaterClarity } from '@shared/types'
+import type { CapturedAtSource, LocationSource, WaterClarity } from '@shared/types'
 import { createCatch } from '@/lib/api-client'
+import { extractPhotoExif } from '@/lib/exif'
+import { requestDeviceLocation } from '@/hooks/useGeolocation'
 import { WaterClarityPicker } from '@/components/review/WaterClarityPicker'
+import { PhotoPicker } from '@/components/capture/PhotoPicker'
+import { LocationFallback } from '@/components/capture/LocationFallback'
 
-function nowForDatetimeLocal() {
-  const d = new Date()
+function toDatetimeLocalValue(date: Date) {
+  const d = new Date(date)
   d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
   return d.toISOString().slice(0, 16)
 }
 
+const LOCATION_SOURCE_LABEL: Record<LocationSource, string> = {
+  EXIF_GPS: 'Position issue de la photo',
+  DEVICE_GPS: "Position de l'appareil",
+  MANUAL_PIN: 'Position placée manuellement',
+}
+
 export function CapturePage() {
   const navigate = useNavigate()
-  const [capturedAt, setCapturedAt] = useState(nowForDatetimeLocal())
-  const [latitude, setLatitude] = useState('')
-  const [longitude, setLongitude] = useState('')
+  const [capturedAt, setCapturedAt] = useState(toDatetimeLocalValue(new Date()))
+  const [capturedAtSource, setCapturedAtSource] = useState<CapturedAtSource>('USER_INPUT')
+  const [latitude, setLatitude] = useState<number | null>(null)
+  const [longitude, setLongitude] = useState<number | null>(null)
+  const [locationSource, setLocationSource] = useState<LocationSource | null>(null)
+  const [locationError, setLocationError] = useState<string | null>(null)
   const [species, setSpecies] = useState('')
   const [estimatedSizeCm, setEstimatedSizeCm] = useState('')
   const [lureName, setLureName] = useState('')
@@ -25,22 +38,55 @@ export function CapturePage() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  const canSubmit = capturedAt && latitude !== '' && longitude !== '' && waterClarity !== null
+  const canSubmit = capturedAt && latitude !== null && longitude !== null && waterClarity !== null
+
+  async function handlePhotoSelected(file: File) {
+    const exif = await extractPhotoExif(file)
+    if (exif.latitude !== null && exif.longitude !== null) {
+      setLatitude(exif.latitude)
+      setLongitude(exif.longitude)
+      setLocationSource('EXIF_GPS')
+      setLocationError(null)
+    }
+    if (exif.capturedAt) {
+      setCapturedAt(toDatetimeLocalValue(exif.capturedAt))
+      setCapturedAtSource('EXIF')
+    }
+  }
+
+  async function handleUseDeviceLocation() {
+    setLocationError(null)
+    try {
+      const loc = await requestDeviceLocation()
+      setLatitude(loc.latitude)
+      setLongitude(loc.longitude)
+      setLocationSource('DEVICE_GPS')
+    } catch (err) {
+      setLocationError(err instanceof Error ? err.message : 'Position indisponible')
+    }
+  }
+
+  function handleManualLocationChange(lat: number, lng: number) {
+    setLatitude(lat)
+    setLongitude(lng)
+    setLocationSource('MANUAL_PIN')
+    setLocationError(null)
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!canSubmit || !waterClarity) return
+    if (!canSubmit || !waterClarity || latitude === null || longitude === null || !locationSource) return
 
     setSubmitting(true)
     setError(null)
     try {
       await createCatch({
         clientId: crypto.randomUUID(),
-        latitude: Number(latitude),
-        longitude: Number(longitude),
-        locationSource: 'MANUAL_PIN',
+        latitude,
+        longitude,
+        locationSource,
         capturedAt: new Date(capturedAt).toISOString(),
-        capturedAtSource: 'USER_INPUT',
+        capturedAtSource,
         photoUrl: null,
         photoPathname: null,
         species: species || null,
@@ -69,46 +115,50 @@ export function CapturePage() {
     <div>
       <h2 className="text-xl font-semibold mb-4">Nouvelle prise</h2>
       <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
-        Saisie manuelle pour l'instant — la photo et l'analyse automatique arrivent bientôt.
+        Ajoute une photo pour pré-remplir le lieu et la date — l'analyse automatique (espèce, taille, leurre) arrive bientôt.
       </p>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <PhotoPicker onPhotoSelected={handlePhotoSelected} />
+
         <label className="flex flex-col gap-1">
           <span className="text-sm font-medium">Date et heure *</span>
           <input
             type="datetime-local"
             required
             value={capturedAt}
-            onChange={(e) => setCapturedAt(e.target.value)}
+            onChange={(e) => {
+              setCapturedAt(e.target.value)
+              setCapturedAtSource('USER_INPUT')
+            }}
             className="rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2"
           />
         </label>
 
-        <div className="grid grid-cols-2 gap-3">
-          <label className="flex flex-col gap-1">
-            <span className="text-sm font-medium">Latitude *</span>
-            <input
-              type="number"
-              step="any"
-              required
-              placeholder="45.7640"
-              value={latitude}
-              onChange={(e) => setLatitude(e.target.value)}
-              className="rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2"
-            />
-          </label>
-          <label className="flex flex-col gap-1">
-            <span className="text-sm font-medium">Longitude *</span>
-            <input
-              type="number"
-              step="any"
-              required
-              placeholder="4.8357"
-              value={longitude}
-              onChange={(e) => setLongitude(e.target.value)}
-              className="rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2"
-            />
-          </label>
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-sm font-medium">Position *</span>
+            <button
+              type="button"
+              onClick={handleUseDeviceLocation}
+              className="text-sm text-blue-600 dark:text-blue-400 font-medium"
+            >
+              Utiliser ma position
+            </button>
+          </div>
+          <LocationFallback
+            latitude={latitude}
+            longitude={longitude}
+            onChange={handleManualLocationChange}
+          />
+          <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+            {locationSource
+              ? LOCATION_SOURCE_LABEL[locationSource]
+              : 'Touche la carte pour placer le lieu de la prise'}
+          </p>
+          {locationError && (
+            <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">{locationError}</p>
+          )}
         </div>
 
         <label className="flex flex-col gap-1">

@@ -1,19 +1,6 @@
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
-import L from 'leaflet'
-import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png'
-import markerIcon from 'leaflet/dist/images/marker-icon.png'
-import markerShadow from 'leaflet/dist/images/marker-shadow.png'
+import { defaultMarkerIcon } from '@/lib/leafletIcon'
 import type { Catch } from '@shared/types'
-
-const defaultIcon = L.icon({
-  iconUrl: markerIcon,
-  iconRetinaUrl: markerIcon2x,
-  shadowUrl: markerShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-})
 
 interface CatchMapProps {
   catches: Catch[]
@@ -33,7 +20,7 @@ export function CatchMap({ catches }: CatchMapProps) {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {catches.map((c) => (
-          <Marker key={c.id} position={[c.latitude, c.longitude]} icon={defaultIcon}>
+          <Marker key={c.id} position={[c.latitude, c.longitude]} icon={defaultMarkerIcon}>
             <Popup>
               <div className="text-sm">
                 <div className="font-medium">{c.species ?? 'Espèce inconnue'}</div>
