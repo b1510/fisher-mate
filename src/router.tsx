@@ -3,6 +3,7 @@ import { AppShell } from './components/layout/AppShell'
 import { CapturePage } from './pages/CapturePage'
 import { ReviewPage } from './pages/ReviewPage'
 import { HistoryPage } from './pages/HistoryPage'
+import { NotFoundPage } from './pages/NotFoundPage'
 
 export const router = createBrowserRouter([
   {
@@ -12,6 +13,7 @@ export const router = createBrowserRouter([
       { index: true, element: <CapturePage /> },
       { path: 'revue/:clientId', element: <ReviewPage /> },
       { path: 'historique', element: <HistoryPage /> },
+      { path: '*', element: <NotFoundPage /> },
     ],
   },
 ])
