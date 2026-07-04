@@ -1,6 +1,9 @@
 {
   "permissions": {
+    "defaultMode": "acceptEdits",
     "allow": [
+      "Edit",
+      "Write",
       "PowerShell(npm run build*)",
       "PowerShell(npm run dev*)",
       "PowerShell(npm run lint*)",
