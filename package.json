@@ -15,14 +15,17 @@
     "@prisma/client": "^7.8.0",
     "@tailwindcss/vite": "^4.3.2",
     "dotenv": "^17.4.2",
+    "leaflet": "^1.9.4",
     "prisma": "^7.8.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
+    "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.18.1",
     "tailwindcss": "^4.3.2",
     "ws": "^8.21.0"
   },
   "devDependencies": {
+    "@types/leaflet": "^1.9.21",
     "@types/node": "^24.13.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
