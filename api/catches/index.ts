@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { prisma } from '../_lib/prisma'
-import { normalizeLureType } from '../_lib/lureType'
+import { normalizeLureType } from '../../shared/lureType'
 import { ValidationError, validateCreateCatchBody } from '../_lib/validate'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

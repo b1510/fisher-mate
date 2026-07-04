@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LURE_TYPE_OPTIONS } from '@shared/constants'
-import type { CapturedAtSource, LocationSource, WaterClarity } from '@shared/types'
-import { createCatch } from '@/lib/api-client'
+import type { CapturedAtSource, LocationSource } from '@shared/types'
+import { analyzeCatch } from '@/lib/api-client'
 import { extractPhotoExif } from '@/lib/exif'
+import { fileToBase64 } from '@/lib/file'
 import { requestDeviceLocation } from '@/hooks/useGeolocation'
-import { WaterClarityPicker } from '@/components/review/WaterClarityPicker'
+import { setDraft } from '@/lib/draftStore'
 import { PhotoPicker } from '@/components/capture/PhotoPicker'
 import { LocationFallback } from '@/components/capture/LocationFallback'
 
@@ -23,24 +23,21 @@ const LOCATION_SOURCE_LABEL: Record<LocationSource, string> = {
 
 export function CapturePage() {
   const navigate = useNavigate()
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [promptText, setPromptText] = useState('')
   const [capturedAt, setCapturedAt] = useState(toDatetimeLocalValue(new Date()))
   const [capturedAtSource, setCapturedAtSource] = useState<CapturedAtSource>('USER_INPUT')
   const [latitude, setLatitude] = useState<number | null>(null)
   const [longitude, setLongitude] = useState<number | null>(null)
   const [locationSource, setLocationSource] = useState<LocationSource | null>(null)
   const [locationError, setLocationError] = useState<string | null>(null)
-  const [species, setSpecies] = useState('')
-  const [estimatedSizeCm, setEstimatedSizeCm] = useState('')
-  const [lureName, setLureName] = useState('')
-  const [lureTypeRaw, setLureTypeRaw] = useState('')
-  const [waterClarity, setWaterClarity] = useState<WaterClarity | null>(null)
-  const [notes, setNotes] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [submitting, setSubmitting] = useState(false)
+  const [analyzing, setAnalyzing] = useState(false)
 
-  const canSubmit = capturedAt && latitude !== null && longitude !== null && waterClarity !== null
+  const hasInput = photoFile !== null || promptText.trim().length > 0
+  const canContinue = hasInput && latitude !== null && longitude !== null && capturedAt
 
   async function handlePhotoSelected(file: File) {
+    setPhotoFile(file)
     const exif = await extractPhotoExif(file)
     if (exif.latitude !== null && exif.longitude !== null) {
       setLatitude(exif.latitude)
@@ -73,53 +70,58 @@ export function CapturePage() {
     setLocationError(null)
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!canSubmit || !waterClarity || latitude === null || longitude === null || !locationSource) return
+  async function handleContinue() {
+    if (!canContinue || latitude === null || longitude === null || !locationSource) return
+    setAnalyzing(true)
 
-    setSubmitting(true)
-    setError(null)
+    let ai = null
+    let analyzeError: string | null = null
     try {
-      await createCatch({
-        clientId: crypto.randomUUID(),
-        latitude,
-        longitude,
-        locationSource,
-        capturedAt: new Date(capturedAt).toISOString(),
-        capturedAtSource,
-        photoUrl: null,
-        photoPathname: null,
-        species: species || null,
-        speciesConfidence: null,
-        estimatedSizeCm: estimatedSizeCm ? Number(estimatedSizeCm) : null,
-        sizeConfidence: null,
-        lureName: lureName || null,
-        lureType: null,
-        lureTypeRaw: lureTypeRaw || null,
-        lureConfidence: null,
-        waterClarity,
-        waterClarityConfidence: null,
-        waterClarityUserSet: true,
-        rawPrompt: notes || null,
-        aiNotes: null,
+      const photoBase64 = photoFile ? await fileToBase64(photoFile) : undefined
+      ai = await analyzeCatch({
+        photoBase64,
+        promptText: promptText.trim() || undefined,
       })
-      navigate('/historique')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue')
-    } finally {
-      setSubmitting(false)
+      analyzeError = err instanceof Error ? err.message : "L'analyse IA a échoué"
     }
+
+    setDraft({
+      photoFile,
+      photoPreviewUrl: photoFile ? URL.createObjectURL(photoFile) : null,
+      latitude,
+      longitude,
+      locationSource,
+      capturedAt: new Date(capturedAt).toISOString(),
+      capturedAtSource,
+      promptText: promptText.trim() || null,
+      ai,
+      analyzeError,
+    })
+    setAnalyzing(false)
+    navigate('/revue')
   }
 
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">Nouvelle prise</h2>
       <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
-        Ajoute une photo pour pré-remplir le lieu et la date — l'analyse automatique (espèce, taille, leurre) arrive bientôt.
+        Ajoute une photo et/ou décris ta prise, l'IA se charge de pré-remplir les détails.
       </p>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4">
         <PhotoPicker onPhotoSelected={handlePhotoSelected} />
+
+        <label className="flex flex-col gap-1">
+          <span className="text-sm font-medium">Description (optionnel)</span>
+          <textarea
+            value={promptText}
+            onChange={(e) => setPromptText(e.target.value)}
+            rows={3}
+            placeholder="Ex : brochet d'environ 60cm pris au spinnerbait, eau trouble"
+            className="rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2"
+          />
+        </label>
 
         <label className="flex flex-col gap-1">
           <span className="text-sm font-medium">Date et heure *</span>
@@ -161,80 +163,15 @@ export function CapturePage() {
           )}
         </div>
 
-        <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">Espèce</span>
-          <input
-            type="text"
-            value={species}
-            onChange={(e) => setSpecies(e.target.value)}
-            className="rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2"
-          />
-        </label>
-
-        <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">Taille estimée (cm)</span>
-          <input
-            type="number"
-            step="any"
-            value={estimatedSizeCm}
-            onChange={(e) => setEstimatedSizeCm(e.target.value)}
-            className="rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2"
-          />
-        </label>
-
-        <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">Nom du leurre</span>
-          <input
-            type="text"
-            value={lureName}
-            onChange={(e) => setLureName(e.target.value)}
-            className="rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2"
-          />
-        </label>
-
-        <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">Type de leurre</span>
-          <select
-            value={lureTypeRaw}
-            onChange={(e) => setLureTypeRaw(e.target.value)}
-            className="rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2"
-          >
-            <option value="">—</option>
-            {LURE_TYPE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.label}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <div>
-          <span className="text-sm font-medium">Clarté de l'eau *</span>
-          <div className="mt-1">
-            <WaterClarityPicker value={waterClarity} onChange={setWaterClarity} />
-          </div>
-        </div>
-
-        <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">Notes</span>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={3}
-            className="rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2"
-          />
-        </label>
-
-        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
-
         <button
-          type="submit"
-          disabled={!canSubmit || submitting}
+          type="button"
+          onClick={handleContinue}
+          disabled={!canContinue || analyzing}
           className="rounded-md bg-blue-600 text-white font-medium py-2 disabled:opacity-50"
         >
-          {submitting ? 'Enregistrement…' : 'Enregistrer la prise'}
+          {analyzing ? 'Analyse en cours…' : 'Continuer'}
         </button>
-      </form>
+      </div>
     </div>
   )
 }

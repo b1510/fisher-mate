@@ -82,7 +82,7 @@ export interface AIExtractionResult {
   species: AIFieldResult<string>
   estimatedSizeCm: AIFieldResult<number>
   lureName: AIFieldResult<string>
-  lureType: AIFieldResult<LureType>
+  lureTypeRaw: AIFieldResult<string>
   waterClarity: AIFieldResult<WaterClarity>
   notes: string | null
 }

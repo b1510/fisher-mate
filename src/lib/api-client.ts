@@ -1,4 +1,4 @@
-import type { Catch, CatchInput } from '@shared/types'
+import type { AIExtractionResult, Catch, CatchInput } from '@shared/types'
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -30,4 +30,11 @@ export function getCatch(id: string) {
 
 export function deleteCatch(id: string) {
   return request<void>(`/api/catches/${id}`, { method: 'DELETE' })
+}
+
+export function analyzeCatch(input: { photoBase64?: string; promptText?: string }) {
+  return request<AIExtractionResult>('/api/analyze', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
 }

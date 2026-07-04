@@ -1,4 +1,4 @@
-import type { LureType } from '@prisma/client'
+import type { LureType } from './types'
 
 const KEYWORDS: [LureType, string[]][] = [
   ['SPINNERBAIT', ['spinnerbait']],

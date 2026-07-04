@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { prisma } from '../_lib/prisma'
-import { normalizeLureType } from '../_lib/lureType'
+import { normalizeLureType } from '../../shared/lureType'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { id } = req.query
