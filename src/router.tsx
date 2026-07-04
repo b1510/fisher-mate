@@ -10,7 +10,7 @@ export const router = createBrowserRouter([
     element: <AppShell />,
     children: [
       { index: true, element: <CapturePage /> },
-      { path: 'revue', element: <ReviewPage /> },
+      { path: 'revue/:clientId', element: <ReviewPage /> },
       { path: 'historique', element: <HistoryPage /> },
     ],
   },

@@ -1,18 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { CapturedAtSource, LocationSource } from '@shared/types'
-import { analyzeCatch, fetchWeather } from '@/lib/api-client'
 import { extractPhotoExif } from '@/lib/exif'
-import { fileToBase64 } from '@/lib/file'
 import { compressImage } from '@/lib/imageCompress'
 import { requestDeviceLocation } from '@/hooks/useGeolocation'
-import { setDraft } from '@/lib/draftStore'
+import { putPendingCatch } from '@/lib/db'
+import { runSync } from '@/lib/syncEngine'
 import { PhotoPicker } from '@/components/capture/PhotoPicker'
 import { LocationFallback } from '@/components/capture/LocationFallback'
-
-function errorMessage(err: unknown): string {
-  return err instanceof Error ? err.message : String(err)
-}
 
 function toDatetimeLocalValue(date: Date) {
   const d = new Date(date)
@@ -36,7 +31,7 @@ export function CapturePage() {
   const [longitude, setLongitude] = useState<number | null>(null)
   const [locationSource, setLocationSource] = useState<LocationSource | null>(null)
   const [locationError, setLocationError] = useState<string | null>(null)
-  const [analyzing, setAnalyzing] = useState(false)
+  const [saving, setSaving] = useState(false)
 
   const hasInput = photoFile !== null || promptText.trim().length > 0
   const canContinue = hasInput && latitude !== null && longitude !== null && capturedAt
@@ -77,39 +72,40 @@ export function CapturePage() {
 
   async function handleContinue() {
     if (!canContinue || latitude === null || longitude === null || !locationSource) return
-    setAnalyzing(true)
+    setSaving(true)
 
-    const capturedAtIso = new Date(capturedAt).toISOString()
-    const photoBase64 = photoFile ? await fileToBase64(photoFile) : undefined
-
-    const [analyzeResult, weatherResult] = await Promise.allSettled([
-      analyzeCatch({ photoBase64, promptText: promptText.trim() || undefined }),
-      fetchWeather({ latitude, longitude, capturedAt: capturedAtIso }),
-    ])
-
-    setDraft({
+    const now = new Date().toISOString()
+    await putPendingCatch({
+      clientId: crypto.randomUUID(),
+      status: 'pending_sync',
       photoFile,
-      photoPreviewUrl: photoFile ? URL.createObjectURL(photoFile) : null,
       latitude,
       longitude,
       locationSource,
-      capturedAt: capturedAtIso,
+      capturedAt: new Date(capturedAt).toISOString(),
       capturedAtSource,
       promptText: promptText.trim() || null,
-      ai: analyzeResult.status === 'fulfilled' ? analyzeResult.value : null,
-      analyzeError: analyzeResult.status === 'rejected' ? errorMessage(analyzeResult.reason) : null,
-      weather: weatherResult.status === 'fulfilled' ? weatherResult.value : null,
-      weatherError: weatherResult.status === 'rejected' ? errorMessage(weatherResult.reason) : null,
+      ai: null,
+      analyzeError: null,
+      weather: null,
+      weatherError: null,
+      syncError: null,
+      retryCount: 0,
+      createdAt: now,
+      updatedAt: now,
     })
-    setAnalyzing(false)
-    navigate('/revue')
+
+    void runSync()
+    setSaving(false)
+    navigate('/historique')
   }
 
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">Nouvelle prise</h2>
       <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
-        Ajoute une photo et/ou décris ta prise, l'IA se charge de pré-remplir les détails.
+        Ajoute une photo et/ou décris ta prise, l'IA se charge de pré-remplir les détails — ça
+        fonctionne même sans réseau, la synchronisation se fera automatiquement.
       </p>
 
       <div className="flex flex-col gap-4">
@@ -169,10 +165,10 @@ export function CapturePage() {
         <button
           type="button"
           onClick={handleContinue}
-          disabled={!canContinue || analyzing}
+          disabled={!canContinue || saving}
           className="rounded-md bg-blue-600 text-white font-medium py-2 disabled:opacity-50"
         >
-          {analyzing ? 'Analyse en cours…' : 'Continuer'}
+          {saving ? 'Enregistrement…' : 'Enregistrer'}
         </button>
       </div>
     </div>

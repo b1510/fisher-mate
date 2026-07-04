@@ -1,9 +1,9 @@
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
 import { defaultMarkerIcon } from '@/lib/leafletIcon'
-import type { Catch } from '@shared/types'
+import type { HistoryItem } from '@/lib/historyItem'
 
 interface CatchMapProps {
-  catches: Catch[]
+  catches: HistoryItem[]
 }
 
 const DEFAULT_CENTER: [number, number] = [46.6, 2.4]
@@ -20,7 +20,7 @@ export function CatchMap({ catches }: CatchMapProps) {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {catches.map((c) => (
-          <Marker key={c.id} position={[c.latitude, c.longitude]} icon={defaultMarkerIcon}>
+          <Marker key={c.key} position={[c.latitude, c.longitude]} icon={defaultMarkerIcon}>
             <Popup>
               <div className="text-sm">
                 <div className="font-medium">{c.species ?? 'Espèce inconnue'}</div>

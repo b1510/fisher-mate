@@ -1,15 +1,15 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { LURE_TYPE_OPTIONS } from '@shared/constants'
 import { normalizeLureType } from '@shared/lureType'
 import type { WaterClarity } from '@shared/types'
-import type { CatchDraft } from '@/lib/draftStore'
+import type { PendingCatch } from '@/lib/db'
 import { createCatch } from '@/lib/api-client'
 import { fileToBase64 } from '@/lib/file'
 import { WaterClarityPicker } from './WaterClarityPicker'
 import { WeatherSummary } from './WeatherSummary'
 
 interface ReviewFormProps {
-  draft: CatchDraft
+  draft: PendingCatch
   onSaved: () => void
 }
 
@@ -38,6 +38,14 @@ export function ReviewForm({ draft, onSaved }: ReviewFormProps) {
   const [notes, setNotes] = useState(ai?.notes ?? '')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!draft.photoFile) return
+    const url = URL.createObjectURL(draft.photoFile)
+    setPhotoPreviewUrl(url)
+    return () => URL.revokeObjectURL(url)
+  }, [draft.photoFile])
 
   const waterClarityNeedsReview = !ai || ai.waterClarity.needsReview
   const canSubmit = waterClarity !== null
@@ -97,9 +105,9 @@ export function ReviewForm({ draft, onSaved }: ReviewFormProps) {
         </p>
       )}
 
-      {draft.photoPreviewUrl && (
+      {photoPreviewUrl && (
         <img
-          src={draft.photoPreviewUrl}
+          src={photoPreviewUrl}
           alt="Prise"
           className="rounded-md max-h-64 w-full object-cover"
         />

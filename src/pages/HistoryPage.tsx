@@ -1,21 +1,38 @@
 import { useEffect, useState } from 'react'
 import type { Catch } from '@shared/types'
 import { listCatches } from '@/lib/api-client'
+import { getAllPendingCatches, type PendingCatch } from '@/lib/db'
+import { mergeHistoryItems } from '@/lib/historyItem'
+import { SYNC_CHANGED_EVENT } from '@/lib/syncEngine'
 import { CatchList } from '@/components/history/CatchList'
 import { CatchMap } from '@/components/history/CatchMap'
 
 type ViewMode = 'liste' | 'carte'
 
 export function HistoryPage() {
-  const [catches, setCatches] = useState<Catch[] | null>(null)
+  const [serverCatches, setServerCatches] = useState<Catch[]>([])
+  const [serverLoading, setServerLoading] = useState(true)
+  const [pending, setPending] = useState<PendingCatch[]>([])
   const [error, setError] = useState<string | null>(null)
   const [view, setView] = useState<ViewMode>('liste')
 
   useEffect(() => {
     listCatches()
-      .then(setCatches)
+      .then(setServerCatches)
       .catch((err) => setError(err instanceof Error ? err.message : 'Erreur de chargement'))
+      .finally(() => setServerLoading(false))
   }, [])
+
+  useEffect(() => {
+    function refreshPending() {
+      getAllPendingCatches().then(setPending)
+    }
+    refreshPending()
+    window.addEventListener(SYNC_CHANGED_EVENT, refreshPending)
+    return () => window.removeEventListener(SYNC_CHANGED_EVENT, refreshPending)
+  }, [])
+
+  const items = mergeHistoryItems(serverCatches, pending)
 
   return (
     <div>
@@ -41,13 +58,17 @@ export function HistoryPage() {
         </div>
       </div>
 
-      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
-      {!error && catches === null && (
+      {error && (
+        <p className="text-sm text-amber-600 dark:text-amber-400 mb-2">
+          Historique en ligne indisponible ({error}) — tes prises locales restent affichées.
+        </p>
+      )}
+      {serverLoading && items.length === 0 && (
         <p className="text-neutral-500 dark:text-neutral-400">Chargement…</p>
       )}
 
-      {catches &&
-        (view === 'liste' ? <CatchList catches={catches} /> : <CatchMap catches={catches} />)}
+      {(!serverLoading || items.length > 0) &&
+        (view === 'liste' ? <CatchList catches={items} /> : <CatchMap catches={items} />)}
     </div>
   )
 }
