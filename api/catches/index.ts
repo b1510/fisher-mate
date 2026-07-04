@@ -1,12 +1,13 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { prisma } from '../_lib/prisma'
 import { normalizeLureType } from '../../shared/lureType'
+import { serializeCatch } from '../_lib/serialize'
 import { ValidationError, validateCreateCatchBody } from '../_lib/validate'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') {
     const catches = await prisma.catch.findMany({ orderBy: { capturedAt: 'desc' } })
-    res.status(200).json(catches)
+    res.status(200).json(catches.map(serializeCatch))
     return
   }
 
@@ -37,10 +38,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           lureConfidence: body.lureConfidence,
           rawPrompt: body.rawPrompt,
           aiNotes: body.aiNotes,
+          weatherTemperatureC: body.weather?.temperatureC,
+          weatherWindSpeedKmh: body.weather?.windSpeedKmh,
+          weatherWindDirectionDeg: body.weather?.windDirectionDeg,
+          weatherPressureHpa: body.weather?.pressureHpa,
+          weatherCloudCoverPct: body.weather?.cloudCoverPct,
+          weatherPrecipitationMm: body.weather?.precipitationMm,
+          weatherFetchedAt: body.weather?.fetchedAt ? new Date(body.weather.fetchedAt) : undefined,
         },
       })
 
-      res.status(201).json(created)
+      res.status(201).json(serializeCatch(created))
     } catch (err) {
       if (err instanceof ValidationError) {
         res.status(400).json({ error: err.message })

@@ -27,6 +27,15 @@ export interface CreateCatchBody {
   lureConfidence?: number
   rawPrompt?: string
   aiNotes?: string
+  weather?: {
+    temperatureC?: number | null
+    windSpeedKmh?: number | null
+    windDirectionDeg?: number | null
+    pressureHpa?: number | null
+    cloudCoverPct?: number | null
+    precipitationMm?: number | null
+    fetchedAt?: string | null
+  }
 }
 
 /** Validates the mandatory fields for creating a Catch: capturedAt, location, water clarity. */

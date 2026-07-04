@@ -1,4 +1,4 @@
-import type { AIExtractionResult, CapturedAtSource, LocationSource } from '@shared/types'
+import type { AIExtractionResult, CapturedAtSource, LocationSource, WeatherSnapshot } from '@shared/types'
 
 export interface CatchDraft {
   photoFile: File | null
@@ -11,6 +11,8 @@ export interface CatchDraft {
   promptText: string | null
   ai: AIExtractionResult | null
   analyzeError: string | null
+  weather: WeatherSnapshot | null
+  weatherError: string | null
 }
 
 let currentDraft: CatchDraft | null = null

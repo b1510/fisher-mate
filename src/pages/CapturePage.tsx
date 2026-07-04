@@ -1,13 +1,17 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { CapturedAtSource, LocationSource } from '@shared/types'
-import { analyzeCatch } from '@/lib/api-client'
+import { analyzeCatch, fetchWeather } from '@/lib/api-client'
 import { extractPhotoExif } from '@/lib/exif'
 import { fileToBase64 } from '@/lib/file'
 import { requestDeviceLocation } from '@/hooks/useGeolocation'
 import { setDraft } from '@/lib/draftStore'
 import { PhotoPicker } from '@/components/capture/PhotoPicker'
 import { LocationFallback } from '@/components/capture/LocationFallback'
+
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err)
+}
 
 function toDatetimeLocalValue(date: Date) {
   const d = new Date(date)
@@ -74,17 +78,13 @@ export function CapturePage() {
     if (!canContinue || latitude === null || longitude === null || !locationSource) return
     setAnalyzing(true)
 
-    let ai = null
-    let analyzeError: string | null = null
-    try {
-      const photoBase64 = photoFile ? await fileToBase64(photoFile) : undefined
-      ai = await analyzeCatch({
-        photoBase64,
-        promptText: promptText.trim() || undefined,
-      })
-    } catch (err) {
-      analyzeError = err instanceof Error ? err.message : "L'analyse IA a échoué"
-    }
+    const capturedAtIso = new Date(capturedAt).toISOString()
+    const photoBase64 = photoFile ? await fileToBase64(photoFile) : undefined
+
+    const [analyzeResult, weatherResult] = await Promise.allSettled([
+      analyzeCatch({ photoBase64, promptText: promptText.trim() || undefined }),
+      fetchWeather({ latitude, longitude, capturedAt: capturedAtIso }),
+    ])
 
     setDraft({
       photoFile,
@@ -92,11 +92,13 @@ export function CapturePage() {
       latitude,
       longitude,
       locationSource,
-      capturedAt: new Date(capturedAt).toISOString(),
+      capturedAt: capturedAtIso,
       capturedAtSource,
       promptText: promptText.trim() || null,
-      ai,
-      analyzeError,
+      ai: analyzeResult.status === 'fulfilled' ? analyzeResult.value : null,
+      analyzeError: analyzeResult.status === 'rejected' ? errorMessage(analyzeResult.reason) : null,
+      weather: weatherResult.status === 'fulfilled' ? weatherResult.value : null,
+      weatherError: weatherResult.status === 'rejected' ? errorMessage(weatherResult.reason) : null,
     })
     setAnalyzing(false)
     navigate('/revue')

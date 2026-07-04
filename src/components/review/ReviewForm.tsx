@@ -5,6 +5,7 @@ import type { WaterClarity } from '@shared/types'
 import type { CatchDraft } from '@/lib/draftStore'
 import { createCatch } from '@/lib/api-client'
 import { WaterClarityPicker } from './WaterClarityPicker'
+import { WeatherSummary } from './WeatherSummary'
 
 interface ReviewFormProps {
   draft: CatchDraft
@@ -74,6 +75,7 @@ export function ReviewForm({ draft, onSaved }: ReviewFormProps) {
         waterClarityUserSet: waterClarityTouched || waterClarityNeedsReview,
         rawPrompt: draft.promptText,
         aiNotes: notes || null,
+        weather: draft.weather ?? undefined,
       })
       onSaved()
     } catch (err) {
@@ -98,6 +100,8 @@ export function ReviewForm({ draft, onSaved }: ReviewFormProps) {
           className="rounded-md max-h-64 w-full object-cover"
         />
       )}
+
+      <WeatherSummary weather={draft.weather} error={draft.weatherError} />
 
       <label className="flex flex-col gap-1">
         <span className="text-sm font-medium">Espèce</span>

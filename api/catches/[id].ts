@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { prisma } from '../_lib/prisma'
 import { normalizeLureType } from '../../shared/lureType'
+import { serializeCatch } from '../_lib/serialize'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { id } = req.query
@@ -15,13 +16,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       res.status(404).json({ error: 'Prise introuvable' })
       return
     }
-    res.status(200).json(found)
+    res.status(200).json(serializeCatch(found))
     return
   }
 
   if (req.method === 'PATCH') {
-    const body = (req.body ?? {}) as Record<string, unknown>
-    const { capturedAt, lureTypeRaw, ...rest } = body
+    interface WeatherPatch {
+      temperatureC?: number | null
+      windSpeedKmh?: number | null
+      windDirectionDeg?: number | null
+      pressureHpa?: number | null
+      cloudCoverPct?: number | null
+      precipitationMm?: number | null
+      fetchedAt?: string | null
+    }
+    const body = (req.body ?? {}) as Record<string, unknown> & { weather?: WeatherPatch }
+    const { capturedAt, lureTypeRaw, weather, ...rest } = body
+    const w: WeatherPatch = weather ?? {}
 
     try {
       const updated = await prisma.catch.update({
@@ -32,9 +43,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           ...(typeof lureTypeRaw === 'string'
             ? { lureTypeRaw, lureType: normalizeLureType(lureTypeRaw) }
             : {}),
+          ...(weather
+            ? {
+                weatherTemperatureC: w.temperatureC,
+                weatherWindSpeedKmh: w.windSpeedKmh,
+                weatherWindDirectionDeg: w.windDirectionDeg,
+                weatherPressureHpa: w.pressureHpa,
+                weatherCloudCoverPct: w.cloudCoverPct,
+                weatherPrecipitationMm: w.precipitationMm,
+                weatherFetchedAt: w.fetchedAt ? new Date(w.fetchedAt) : undefined,
+              }
+            : {}),
         },
       })
-      res.status(200).json(updated)
+      res.status(200).json(serializeCatch(updated))
     } catch {
       res.status(404).json({ error: 'Prise introuvable' })
     }
